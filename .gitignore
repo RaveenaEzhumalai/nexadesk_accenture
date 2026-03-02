@@ -1,1 +1,5 @@
 backend/venv/
+backend/.env
+backend/nexadesk.db
+**/__pycache__/
+backend/logs/
