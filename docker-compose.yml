@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: nexadesk-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./nexadesk.db
+      - SECRET_KEY=nexadesk-docker-secret-change-in-prod-min32chars
+      - ENVIRONMENT=production
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80
+    volumes:
+      - nexadesk_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: nginx:alpine
+    container_name: nexadesk-ui
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  nexadesk_data:

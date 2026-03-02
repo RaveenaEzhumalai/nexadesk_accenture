@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexaDesk — Agentic AI Service Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060810;--s1:#0d1117;--s2:#161b25;--s3:#1c2333;--b1:#21293d;--b2:#2d3a52;--blue:#3b82f6;--bg-blue:rgba(59,130,246,.12);--green:#22c55e;--bg-green:rgba(34,197,94,.1);--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--cyan:#06b6d4;--text:#e2e8f0;--t2:#94a3b8;--t3:#4b5680;--f:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Fraunces',serif;--r:12px;--r2:8px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--f);min-height:100vh;line-height:1.6;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(59,130,246,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.025) 1px,transparent 1px);background-size:48px 48px}
+.bg-orb{position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(100px);opacity:.6}
+.orb1{width:600px;height:600px;background:rgba(59,130,246,.04);top:-200px;right:-100px}
+.orb2{width:400px;height:400px;background:rgba(139,92,246,.04);bottom:-100px;left:-50px}
+.app{display:flex;height:100vh;position:relative;z-index:1}
+/* SIDEBAR */
+.sidebar{width:255px;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;padding:1.25rem .875rem;flex-shrink:0;overflow-y:auto}
+.logo-row{display:flex;align-items:center;gap:9px;padding:.5rem .75rem;margin-bottom:1.75rem}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.logo-text{font-size:1.2rem;font-weight:800;letter-spacing:-.02em}
+.logo-v{font-family:var(--mono);font-size:.55rem;color:var(--blue);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);padding:1px 6px;border-radius:4px;margin-left:auto}
+.nav-lbl{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--t3);padding:0 .75rem;margin:.75rem 0 .4rem}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.65rem .75rem;border-radius:var(--r2);cursor:pointer;transition:all .15s;font-size:.875rem;font-weight:500;color:var(--t2);border:1px solid transparent;text-decoration:none;margin-bottom:2px;-webkit-user-select:none;user-select:none}
+.nav-item:hover{background:var(--s2);color:var(--text)}
+.nav-item.active{background:rgba(59,130,246,.1);color:#93c5fd;border-color:rgba(59,130,246,.15)}
+.nav-icon{font-size:.95rem;width:18px;text-align:center;flex-shrink:0}
+.nav-nb{margin-left:auto;font-family:var(--mono);font-size:.58rem;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2);padding:1px 6px;border-radius:10px;font-weight:700}
+.sidebar-foot{margin-top:auto;padding-top:1rem;border-top:1px solid var(--b1)}
+.user-row{display:flex;align-items:center;gap:9px;padding:.65rem .75rem;border-radius:var(--r2);background:var(--s2)}
+.u-av{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0}
+.u-name{font-size:.82rem;font-weight:600}
+.u-role{font-size:.7rem;color:var(--t2)}
+/* MAIN */
+.main-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.75rem;border-bottom:1px solid var(--b1);background:rgba(6,8,16,.8);backdrop-filter:blur(20px);flex-shrink:0}
+.page-title{font-size:1.1rem;font-weight:700}
+.page-sub{font-size:.78rem;color:var(--t2)}
+.topbar-r{display:flex;align-items:center;gap:.75rem}
+.status-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.68rem;padding:4px 11px;border-radius:20px;border:1px solid rgba(34,197,94,.2);background:rgba(34,197,94,.08);color:var(--green);white-space:nowrap}
+.pdot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pd 1.5s ease-in-out infinite}
+@keyframes pd{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.content{flex:1;overflow-y:auto;padding:1.75rem}
+.view{display:none}.view.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:1.25rem}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:1.2rem 1.4rem;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;width:100%;height:2px}
+.kc-b::after{background:linear-gradient(90deg,var(--blue),transparent)}
+.kc-g::after{background:linear-gradient(90deg,var(--green),transparent)}
+.kc-a::after{background:linear-gradient(90deg,var(--amber),transparent)}
+.kc-p::after{background:linear-gradient(90deg,var(--purple),transparent)}
+.kpi-lbl{font-size:.72rem;color:var(--t2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem}
+.kpi-val{font-family:var(--serif);font-size:2rem;font-weight:700;line-height:1;margin-bottom:.3rem}
+.kc-b .kpi-val{color:#60a5fa}.kc-g .kpi-val{color:#4ade80}.kc-a .kpi-val{color:var(--amber)}.kc-p .kpi-val{color:#a78bfa}
+.kpi-d{font-size:.72rem;color:var(--green)}
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:1050px){.g2{grid-template-columns:1fr}}
+.gap-b{margin-bottom:1.5rem}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.st{font-size:.92rem;font-weight:700;display:flex;align-items:center;gap:7px}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;font-family:var(--mono);font-size:.6rem;padding:2px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.b-critical{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.22)}
+.b-high{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.22)}
+.b-medium{background:rgba(59,130,246,.1);color:#60a5fa;border:1px solid rgba(59,130,246,.18)}
+.b-low{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.18)}
+.b-resolved{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.18)}
+.b-escalated{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.18)}
+.b-open{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.18)}
+.b-in_progress{background:rgba(139,92,246,.1);color:#a78bfa;border:1px solid rgba(139,92,246,.18)}
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);padding:.7rem 1rem;text-align:left;border-bottom:1px solid var(--b1);white-space:nowrap}
+td{padding:.8rem 1rem;font-size:.84rem;border-bottom:1px solid rgba(33,41,61,.5);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.012)}
+.td-m{font-family:var(--mono);font-size:.7rem;color:var(--t2)}
+.td-t{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* AGENT LOG */
+.alog{display:flex;flex-direction:column;gap:.55rem;max-height:320px;overflow-y:auto;padding:.25rem}
+.log-e{display:flex;gap:9px;align-items:flex-start;padding:.6rem .8rem;border-radius:8px;font-size:.8rem;border-left:2px solid transparent;background:rgba(255,255,255,.012);animation:sli .3s ease}
+@keyframes sli{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.log-e.t-resolve{border-left-color:var(--green)}.log-e.t-escalate{border-left-color:var(--red)}.log-e.t-classify{border-left-color:var(--blue)}.log-e.t-think{border-left-color:var(--purple)}.log-e.t-system{border-left-color:var(--t3)}
+.log-ic{font-size:.9rem;flex-shrink:0;margin-top:1px}.log-txt{line-height:1.4;color:var(--text)}.log-meta{font-family:var(--mono);font-size:.6rem;color:var(--t3);margin-top:1px}
+/* CHART */
+.bca{display:flex;align-items:flex-end;gap:5px;height:130px}.bco{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}.bpair{display:flex;gap:3px;align-items:flex-end;width:100%}.bseg{flex:1;border-radius:4px 4px 0 0;transition:height .6s cubic-bezier(.34,1.56,.64,1)}.bseg:hover{filter:brightness(1.2)}.bseg.green{background:linear-gradient(180deg,#4ade80,rgba(34,197,94,.3))}.bseg.red{background:linear-gradient(180deg,#f87171,rgba(239,68,68,.3))}.bday{font-family:var(--mono);font-size:.58rem;color:var(--t3)}
+.c-legend{display:flex;gap:1.5rem;margin-top:1rem}.c-li{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--t2)}.c-dot{width:8px;height:8px;border-radius:50%}
+/* PROGRESS */
+.pi{margin-bottom:.9rem}.pi:last-child{margin-bottom:0}.pi-h{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.35rem}.pi-trk{height:5px;background:var(--s3);border-radius:5px;overflow:hidden}.pi-fill{height:100%;border-radius:5px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)}
+/* DONUT */
+.donut-w{position:relative;width:130px;height:130px;margin:0 auto .75rem}.donut-w svg{transform:rotate(-90deg)}.donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.dn{font-family:var(--serif);font-size:1.6rem;font-weight:700;line-height:1}.dl{font-size:.62rem;color:var(--t2);text-transform:uppercase;letter-spacing:.08em}
+/* FORM */
+.fs{max-width:720px}
+.fb{margin-bottom:1.1rem}
+.fl{display:block;font-size:.8rem;font-weight:600;margin-bottom:.4rem;color:var(--text)}.fl span{color:var(--red)}
+.fh{font-size:.72rem;color:var(--t2);margin-top:3px}
+.fi,.fsel,.fta{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:9px;padding:.75rem .95rem;color:var(--text);font-family:var(--f);font-size:.87rem;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.fi::placeholder,.fta::placeholder{color:var(--t3)}.fsel option{background:#0d1117}.fta{min-height:120px;resize:vertical;line-height:1.7}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:580px){.frow{grid-template-columns:1fr}}
+/* PRIORITY */
+.prgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem}
+.prop{padding:.7rem .5rem;border-radius:9px;border:1px solid var(--b2);background:var(--s2);color:var(--t2);cursor:pointer;transition:all .15s;text-align:center;font-size:.82rem;font-weight:600;font-family:var(--f);display:flex;flex-direction:column;align-items:center;gap:3px}
+.prop .pi2{font-size:1.1rem}.prop:hover{border-color:var(--b2);background:var(--s3);color:var(--text)}
+.p-low{border-color:rgba(34,197,94,.35)!important;color:#4ade80!important;background:rgba(34,197,94,.07)!important}
+.p-medium{border-color:rgba(59,130,246,.35)!important;color:#60a5fa!important;background:rgba(59,130,246,.07)!important}
+.p-high{border-color:rgba(245,158,11,.35)!important;color:var(--amber)!important;background:rgba(245,158,11,.07)!important}
+.p-critical{border-color:rgba(239,68,68,.35)!important;color:#f87171!important;background:rgba(239,68,68,.07)!important}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:.65rem 1.2rem;border-radius:9px;border:none;cursor:pointer;font-family:var(--f);font-size:.87rem;font-weight:600;transition:all .2s}
+.btn-p{background:var(--blue);color:#fff}.btn-p:hover{background:#2563eb;box-shadow:0 4px 20px rgba(59,130,246,.25);transform:translateY(-1px)}.btn-p:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-g{background:var(--s2);color:var(--t2);border:1px solid var(--b2)}.btn-g:hover{background:var(--s3);color:var(--text)}
+.btn-full{width:100%;justify-content:center;padding:.85rem;font-size:.92rem}
+.btn-lg{padding:.85rem 1.6rem;font-size:.95rem;border-radius:11px}
+/* AGENT PANEL */
+.ap{display:none;margin-top:1.5rem;background:var(--s1);border:1px solid rgba(59,130,246,.18);border-radius:var(--r);overflow:hidden;position:relative}
+.ap.vis{display:block}.ap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue),transparent);animation:sc 2.5s linear infinite}
+@keyframes sc{0%{opacity:0;transform:translateX(-100%)}50%{opacity:1}100%{opacity:0;transform:translateX(100%)}}
+.ap-head{display:flex;align-items:center;gap:11px;padding:1.1rem 1.4rem;border-bottom:1px solid var(--b1)}
+.ap-av{width:42px;height:42px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.ap-name{font-weight:700;font-size:.95rem}.ap-stat{font-family:var(--mono);font-size:.66rem;color:var(--blue)}
+.steps{padding:.9rem 1.4rem;display:flex;flex-direction:column;gap:.55rem}
+.step{display:flex;gap:9px;align-items:flex-start;padding:.75rem .95rem;border-radius:9px;border:1px solid var(--b1);background:rgba(255,255,255,.01);opacity:0;transform:translateY(6px);transition:all .35s}
+.step.sho{opacity:1;transform:none}.step-ic{font-size:.95rem;flex-shrink:0;margin-top:1px}.step-bd{flex:1}.step-ag{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);margin-bottom:1px}.step-msg{font-size:.82rem;line-height:1.5;color:var(--text)}.step-res{font-size:.76rem;color:var(--green);margin-top:2px}.step-chk{color:var(--green);opacity:0;transition:opacity .3s;flex-shrink:0;font-size:.88rem;margin-top:2px}.step.done .step-chk{opacity:1}
+/* RESOLUTION */
+.rc{display:none;margin:0 1.4rem 1.4rem;border-radius:9px;padding:1.1rem;border:1px solid transparent}.rc.vis{display:block}.rc.res{background:rgba(34,197,94,.04);border-color:rgba(34,197,94,.18)}.rc.esc{background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.18)}
+.rc-h{display:flex;align-items:center;gap:9px;margin-bottom:.75rem}.rc-ic{font-size:1.3rem}.rc-ti{font-weight:700;font-size:.95rem}
+.rc-body{font-size:.82rem;line-height:1.85;white-space:pre-line;color:var(--text)}
+.rc-meta{display:flex;gap:2rem;flex-wrap:wrap;margin-top:.9rem;padding-top:.9rem;border-top:1px solid var(--b1)}
+.rml{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:2px}
+.rmv{font-size:.82rem;font-weight:600}
+.conf-w{display:flex;align-items:center;gap:7px;margin-top:3px}.conf-tr{flex:1;height:4px;background:var(--s3);border-radius:4px;overflow:hidden;max-width:90px}.conf-fi{height:100%;background:var(--green);border-radius:4px;width:0;transition:width 1s ease}
+/* KB */
+.kb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1rem}
+.kbc{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:1.2rem;cursor:pointer;transition:all .2s}.kbc:hover{border-color:rgba(59,130,246,.28);background:rgba(59,130,246,.025);transform:translateY(-2px)}
+.kbc-ic{font-size:1.7rem;margin-bottom:.7rem}.kbc-ti{font-weight:700;font-size:.92rem;margin-bottom:.3rem}.kbc-de{font-size:.78rem;color:var(--t2);line-height:1.5;margin-bottom:.7rem}
+.kbtags{display:flex;gap:.35rem;flex-wrap:wrap}.kbtag{font-family:var(--mono);font-size:.56rem;padding:2px 7px;border-radius:8px;background:rgba(59,130,246,.07);color:#60a5fa;border:1px solid rgba(59,130,246,.14)}
+/* SEARCH */
+.sw{position:relative;margin-bottom:1.5rem}.sw-ic{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--t3)}
+.si{width:100%;background:var(--s1);border:1px solid var(--b2);border-radius:9px;padding:.75rem .95rem .75rem 2.6rem;color:var(--text);font-family:var(--f);font-size:.87rem;outline:none;transition:border-color .2s}
+.si:focus{border-color:var(--blue)}.si::placeholder{color:var(--t3)}
+/* ANALYTICS */
+.roi-b{background:linear-gradient(135deg,rgba(59,130,246,.07),rgba(139,92,246,.05));border:1px solid rgba(59,130,246,.14);border-radius:var(--r);padding:1.4rem 1.8rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1.2rem;margin-bottom:1.5rem}
+.roi-i{text-align:center}.roi-n{font-family:var(--serif);font-size:1.8rem;font-weight:700;color:var(--blue)}.roi-l{font-size:.72rem;color:var(--t2);margin-top:3px}
+/* LOGIN */
+.login-w{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;position:relative;z-index:1}
+.login-c{background:var(--s1);border:1px solid var(--b1);border-radius:18px;padding:2.25rem;width:100%;max-width:400px;position:relative}
+.login-c::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.4),transparent)}
+.login-logo{display:flex;align-items:center;gap:9px;margin-bottom:1.75rem;justify-content:center}
+.login-logo .logo-icon{width:42px;height:42px;font-size:1.25rem;border-radius:11px}
+.login-logo .logo-text{font-size:1.4rem;font-weight:800}
+.lt{font-size:1.3rem;font-weight:700;margin-bottom:.25rem}.ls{color:var(--t2);font-size:.85rem;margin-bottom:1.75rem}
+.lerr{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18);color:#f87171;font-size:.8rem;padding:.7rem .9rem;border-radius:8px;margin-bottom:.75rem;display:none}
+.ldemo{background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.13);border-radius:8px;padding:.7rem .9rem;margin-top:.9rem;font-size:.78rem;color:var(--t2);font-family:var(--mono)}
+.ldemo strong{color:var(--blue)}
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem}.mo.op{display:flex}
+.mc{background:var(--s2);border:1px solid var(--b2);border-radius:16px;max-width:580px;width:100%;max-height:85vh;overflow-y:auto;padding:1.75rem;position:relative}
+.mc-x{position:absolute;top:.9rem;right:.9rem;background:var(--s3);border:none;color:var(--t2);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:background .2s}.mc-x:hover{background:var(--b2);color:var(--text)}
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--s2);border:1px solid var(--b2);border-radius:11px;padding:.85rem 1.2rem;display:flex;align-items:center;gap:9px;font-size:.84rem;z-index:1000;transform:translateY(120px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);max-width:320px;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+.toast.show{transform:none;opacity:1}.toast.success{border-color:rgba(34,197,94,.25)}.toast.error{border-color:rgba(239,68,68,.25)}
+/* SPINNER */
+.sp{width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-s{text-align:center;padding:2.5rem 1rem;color:var(--t3)}.empty-s .ei{font-size:2.2rem;margin-bottom:.75rem}.empty-s p{font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<!-- LOGIN -->
+<div id="login-scr">
+<div class="login-w">
+<div class="login-c">
+  <div class="login-logo"><div class="logo-icon">🤖</div><div class="logo-text">NexaDesk</div></div>
+  <div class="lt">Welcome back</div>
+  <div class="ls">Sign in to the AI Service Desk Platform</div>
+  <div id="lerr" class="lerr"></div>
+  <div class="fb"><label class="fl">Email</label><input type="email" class="fi" id="l-email" value="admin@nexadesk.com" placeholder="you@company.com"></div>
+  <div class="fb"><label class="fl">Password</label><input type="password" class="fi" id="l-pw" value="Admin@123" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <button class="btn btn-p btn-full btn-lg" onclick="doLogin()" id="l-btn" style="margin-top:.25rem">Sign In to NexaDesk</button>
+  <div class="ldemo">Demo: <strong>admin@nexadesk.com</strong> / <strong>Admin@123</strong><br><span style="color:var(--t3);font-size:.7rem">Works offline — full demo mode available ✓</span></div>
+</div>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app-scr" style="display:none" class="app">
+<aside class="sidebar">
+  <div class="logo-row"><div class="logo-icon">🤖</div><div class="logo-text">NexaDesk</div><div class="logo-v">v2.0</div></div>
+  <div class="nav-lbl">Main</div>
+  <a class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</a>
+  <a class="nav-item" onclick="nav('submit',this)"><span class="nav-icon">➕</span>New Ticket</a>
+  <a class="nav-item" onclick="nav('tickets',this)"><span class="nav-icon">🎫</span>All Tickets<span class="nav-nb" id="onb">0</span></a>
+  <div class="nav-lbl">Intelligence</div>
+  <a class="nav-item" onclick="nav('kb',this)"><span class="nav-icon">📚</span>Knowledge Base</a>
+  <a class="nav-item" onclick="nav('analytics',this)"><span class="nav-icon">📈</span>Analytics &amp; ROI</a>
+  <a class="nav-item" onclick="nav('agents',this)"><span class="nav-icon">🧠</span>Agent Status</a>
+  <div class="nav-lbl">System</div>
+  <a class="nav-item" href="http://localhost:8000/docs" target="_blank"><span class="nav-icon">🔌</span>API Docs ↗</a>
+  <a class="nav-item" onclick="doLogout()"><span class="nav-icon">🚪</span>Sign Out</a>
+  <div class="sidebar-foot">
+    <div class="user-row"><div class="u-av" id="uav">A</div><div><div class="u-name" id="uname">Admin</div><div class="u-role" id="urole">Administrator</div></div></div>
+  </div>
+</aside>
+<div class="main-wrap">
+<div class="topbar">
+  <div><div class="page-title" id="pt">Dashboard</div><div class="page-sub" id="ps">Real-time AI operations overview</div></div>
+  <div class="topbar-r">
+    <div class="status-pill"><div class="pdot"></div><span>7 Agents Online</span></div>
+    <button class="btn btn-p" style="padding:.5rem 1rem;font-size:.8rem" onclick="nav('submit',null)">➕ New Ticket</button>
+  </div>
+</div>
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="v-dashboard" class="view active">
+  <div class="kpi-grid">
+    <div class="kpi kc-b"><div class="kpi-lbl">Tickets Today</div><div class="kpi-val" id="k-total">247</div><div class="kpi-d">↑ 12% vs yesterday</div></div>
+    <div class="kpi kc-g"><div class="kpi-lbl">AI Auto-Resolved</div><div class="kpi-val" id="k-res">168</div><div class="kpi-d">↑ 68% resolution rate</div></div>
+    <div class="kpi kc-p"><div class="kpi-lbl">Avg Resolution Time</div><div class="kpi-val">4.2<span style="font-size:.9rem;font-weight:400;color:var(--t2)">m</span></div><div class="kpi-d">↓ 73% vs manual</div></div>
+    <div class="kpi kc-a"><div class="kpi-lbl">Cost Saved (Month)</div><div class="kpi-val">$<span id="k-cost">48.3</span>K</div><div class="kpi-d">↑ vs L1 human baseline</div></div>
+  </div>
+  <div class="g2 gap-b">
+    <div><div class="sh"><div class="st">⚡ Live Agent Activity</div></div><div class="card"><div class="alog" id="dlog"><div class="empty-s"><div class="ei">🤖</div><p>Agents monitoring queue…</p></div></div></div></div>
+    <div><div class="sh"><div class="st">📊 Weekly Volume</div></div><div class="card"><div class="bca" id="wchart"></div><div class="c-legend"><div class="c-li"><div class="c-dot" style="background:var(--green)"></div>Resolved</div><div class="c-li"><div class="c-dot" style="background:var(--red)"></div>Escalated</div></div></div></div>
+  </div>
+  <div class="sh"><div class="st">🎫 Recent Tickets</div></div>
+  <div class="card"><div style="overflow-x:auto"><table><thead><tr><th>Ticket</th><th>Title</th><th>Submitter</th><th>Category</th><th>Priority</th><th>Status</th><th>Time</th></tr></thead><tbody id="rtb"><tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem;font-size:.9rem">Submit a ticket — it will appear here instantly ✅</td></tr></tbody></table></div></div>
+</div>
+
+<!-- SUBMIT -->
+<div id="v-submit" class="view">
+<div class="fs">
+  <div style="margin-bottom:1.4rem"><div style="font-size:1.4rem;font-weight:800;margin-bottom:.25rem">Submit IT Ticket</div><div style="color:var(--t2);font-size:.87rem">AI agents will classify, search KB, and attempt auto-resolution in real-time.</div></div>
+  <div class="frow">
+    <div class="fb"><label class="fl">Full Name <span>*</span></label><input type="text" class="fi" id="f-name" placeholder="e.g. Raj Kumar"></div>
+    <div class="fb"><label class="fl">Employee ID <span>*</span></label><input type="text" class="fi" id="f-eid" placeholder="e.g. EMP-10432"></div>
+  </div>
+  <div class="frow">
+    <div class="fb"><label class="fl">Department <span>*</span></label><select class="fsel" id="f-dept"><option value="">Select Department</option><option>Engineering</option><option>Finance</option><option>HR</option><option>Sales</option><option>Operations</option><option>Security</option><option>Legal</option></select></div>
+    <div class="fb"><label class="fl">Email <span>*</span></label><input type="email" class="fi" id="f-email" placeholder="you@company.com"></div>
+  </div>
+  <div class="fb"><label class="fl">Issue Category <span>*</span></label><select class="fsel" id="f-cat"><option value="">Select Category</option><option>Network / VPN</option><option>Email / Outlook</option><option>Laptop / Hardware</option><option>Software / Application</option><option>Access / Permissions</option><option>Security / Phishing</option><option>Data Loss</option><option>Server / Infrastructure</option><option>Other</option></select></div>
+  <div class="fb"><label class="fl">Priority <span>*</span></label>
+    <div class="prgrid">
+      <button class="prop" onclick="selP('low',this)"><span class="pi2">🟢</span>Low</button>
+      <button class="prop" onclick="selP('medium',this)"><span class="pi2">🔵</span>Medium</button>
+      <button class="prop" onclick="selP('high',this)"><span class="pi2">🟡</span>High</button>
+      <button class="prop" onclick="selP('critical',this)"><span class="pi2">🔴</span>Critical</button>
+    </div>
+    <div class="fh">Critical = Production down, Security breach, or Data loss</div>
+  </div>
+  <div class="fb"><label class="fl">Issue Title <span>*</span></label><input type="text" class="fi" id="f-title" placeholder="Brief summary of the issue"></div>
+  <div class="fb"><label class="fl">Detailed Description <span>*</span></label><textarea class="fta" id="f-desc" placeholder="Describe what happened, when it started, what you tried, and any error messages you saw..."></textarea></div>
+  <div class="fb"><label class="fl">Business Impact</label><select class="fsel" id="f-impact"><option>Individual — only affects me</option><option>Team — affects 2–10 people</option><option>Department — affects 10–50 people</option><option>Company-wide — affects 50+ people</option><option>Client-facing — external impact</option></select></div>
+  <button class="btn btn-p btn-full btn-lg" id="sbtn" onclick="submitTicket()">🤖 Submit — Let AI Agents Resolve</button>
+  <!-- AGENT PANEL -->
+  <div class="ap" id="apanel">
+    <div class="ap-head"><div class="ap-av">🤖</div><div><div class="ap-name">NexaAgent Orchestrator v2.1</div><div class="ap-stat" id="astat">Initializing pipeline...</div></div></div>
+    <div class="steps" id="steps"></div>
+    <div class="rc" id="rcard">
+      <div class="rc-h"><div class="rc-ic" id="ric">✅</div><div class="rc-ti" id="rti">Issue Auto-Resolved</div></div>
+      <div class="rc-body" id="rbody"></div>
+      <div class="rc-meta">
+        <div><div class="rml">Ticket Number</div><div class="rmv" id="rnum">—</div></div>
+        <div><div class="rml">Resolution Time</div><div class="rmv" id="rtime">—</div></div>
+        <div><div class="rml">Handled By</div><div class="rmv" id="rassigned">—</div></div>
+        <div id="rconf"><div class="rml">AI Confidence</div><div class="conf-w"><div class="conf-tr"><div class="conf-fi" id="cfi"></div></div><div class="rmv" id="cval">—</div></div></div>
+      </div>
+      <div style="margin-top:1.25rem;display:flex;gap:.75rem;flex-wrap:wrap">
+        <button onclick="navToDashboard()" style="flex:1;padding:.65rem 1rem;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.875rem">📊 View on Dashboard</button>
+        <button onclick="resetForm()" style="flex:1;padding:.65rem 1rem;background:var(--s2);color:var(--t1);border:1px solid var(--b1);border-radius:8px;font-weight:600;cursor:pointer;font-size:.875rem">➕ Submit Another</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TICKETS -->
+<div id="v-tickets" class="view">
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+    <select class="fsel" style="width:auto;padding:.55rem .85rem" id="fs-status" onchange="loadTickets()"><option value="">All Status</option><option value="resolved">Resolved</option><option value="escalated">Escalated</option><option value="open">Open</option></select>
+    <select class="fsel" style="width:auto;padding:.55rem .85rem" id="fs-pri" onchange="loadTickets()"><option value="">All Priority</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+  </div>
+  <div class="card"><div style="overflow-x:auto"><table><thead><tr><th>Ticket #</th><th>Title</th><th>Submitter</th><th>Category</th><th>Priority</th><th>Status</th><th>AI Conf.</th><th>Created</th></tr></thead><tbody id="atb"><tr><td colspan="8" style="text-align:center;color:var(--t3);padding:2rem">Loading...</td></tr></tbody></table></div></div>
+</div>
+
+<!-- KB -->
+<div id="v-kb" class="view">
+  <div style="margin-bottom:1.25rem"><div style="font-size:1.05rem;font-weight:700;margin-bottom:.2rem">Knowledge Base</div><div style="color:var(--t2);font-size:.83rem">AI-curated resolution playbooks. Click any card for full resolution steps.</div></div>
+  <div class="sw"><div class="sw-ic">🔍</div><input type="text" class="si" id="kbs" placeholder="Search articles, tags, solutions..." oninput="filterKB()"></div>
+  <div class="kb-grid" id="kbgrid"><div class="empty-s"><div class="ei">📚</div><p>Loading...</p></div></div>
+</div>
+
+<!-- ANALYTICS -->
+<div id="v-analytics" class="view">
+  <div class="roi-b">
+    <div class="roi-i"><div class="roi-n">$2.4M</div><div class="roi-l">Projected Annual Savings</div></div>
+    <div class="roi-i"><div class="roi-n">68%</div><div class="roi-l">Auto-Resolution Rate</div></div>
+    <div class="roi-i"><div class="roi-n">4.2m</div><div class="roi-l">Avg Resolution Time</div></div>
+    <div class="roi-i"><div class="roi-n">91%</div><div class="roi-l">User Satisfaction</div></div>
+    <div class="roi-i"><div class="roi-n">97.3%</div><div class="roi-l">Classification Accuracy</div></div>
+  </div>
+  <div class="g2 gap-b">
+    <div class="card"><div class="st" style="margin-bottom:1rem">Resolution Breakdown</div>
+      <div class="donut-w"><svg width="130" height="130" viewBox="0 0 130 130"><circle cx="65" cy="65" r="50" fill="none" stroke="var(--s3)" stroke-width="15"/><circle cx="65" cy="65" r="50" fill="none" stroke="#4ade80" stroke-width="15" stroke-dasharray="314.2" stroke-dashoffset="100.5" stroke-linecap="round"/><circle cx="65" cy="65" r="50" fill="none" stroke="#f87171" stroke-width="15" stroke-dasharray="314.2" stroke-dashoffset="267.1" stroke-linecap="round"/></svg><div class="donut-c"><div class="dn" style="color:#4ade80">68%</div><div class="dl">Resolved</div></div></div>
+      <div class="c-legend" style="justify-content:center"><div class="c-li"><div class="c-dot" style="background:#4ade80"></div>AI Resolved (68%)</div><div class="c-li"><div class="c-dot" style="background:#f87171"></div>Escalated (32%)</div></div>
+    </div>
+    <div class="card"><div class="st" style="margin-bottom:1rem">Top Issue Categories</div><div id="cat-prog"></div></div>
+    <div class="card"><div class="st" style="margin-bottom:1rem">Resolution Time by Priority</div>
+      <div class="pi"><div class="pi-h"><span>🔴 Critical</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">2.1 min</span></div><div class="pi-trk"><div class="pi-fill" style="width:95%;background:var(--red)"></div></div></div>
+      <div class="pi"><div class="pi-h"><span>🟡 High</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">4.8 min</span></div><div class="pi-trk"><div class="pi-fill" style="width:78%;background:var(--amber)"></div></div></div>
+      <div class="pi"><div class="pi-h"><span>🔵 Medium</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">8.2 min</span></div><div class="pi-trk"><div class="pi-fill" style="width:55%;background:var(--blue)"></div></div></div>
+      <div class="pi"><div class="pi-h"><span>🟢 Low</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">15.4 min</span></div><div class="pi-trk"><div class="pi-fill" style="width:30%;background:var(--green)"></div></div></div>
+    </div>
+    <div class="card"><div class="st" style="margin-bottom:1rem">Agent Performance</div>
+      <div class="pi"><div class="pi-h"><span>Classification Accuracy</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">97.3%</span></div><div class="pi-trk"><div class="pi-fill" style="width:97%;background:var(--blue)"></div></div></div>
+      <div class="pi"><div class="pi-h"><span>KB Hit Rate</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">84.1%</span></div><div class="pi-trk"><div class="pi-fill" style="width:84%;background:var(--purple)"></div></div></div>
+      <div class="pi"><div class="pi-h"><span>CSAT Score</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">91%</span></div><div class="pi-trk"><div class="pi-fill" style="width:91%;background:var(--green)"></div></div></div>
+      <div class="pi"><div class="pi-h"><span>SLA Compliance</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">98.8%</span></div><div class="pi-trk"><div class="pi-fill" style="width:99%;background:var(--cyan)"></div></div></div>
+    </div>
+  </div>
+  <div class="card"><div class="st" style="margin-bottom:1.1rem">💰 ROI Impact Analysis — Enterprise Model (5,000 employees)</div>
+    <div class="g3">
+      <div style="text-align:center;padding:1rem;background:var(--s2);border-radius:9px"><div style="font-size:.72rem;color:var(--t2);margin-bottom:.35rem">Manual L1 Cost</div><div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--red)">$180/ticket</div><div style="font-size:.68rem;color:var(--t3);margin-top:3px">Salary + overhead + tooling</div></div>
+      <div style="text-align:center;padding:1rem;background:var(--s2);border-radius:9px"><div style="font-size:.72rem;color:var(--t2);margin-bottom:.35rem">AI Cost (NexaDesk)</div><div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--green)">$4/ticket</div><div style="font-size:.68rem;color:var(--t3);margin-top:3px">Infra + AI compute</div></div>
+      <div style="text-align:center;padding:1rem;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.14);border-radius:9px"><div style="font-size:.72rem;color:var(--t2);margin-bottom:.35rem">Savings Per Ticket</div><div style="font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--blue)">$176</div><div style="font-size:.68rem;color:var(--t3);margin-top:3px">97.8% cost reduction</div></div>
+    </div>
+    <div style="margin-top:1rem;padding:.9rem;background:var(--s2);border-radius:9px;font-size:.8rem;color:var(--t2);line-height:1.9"><strong style="color:var(--text)">Annual projection:</strong> 50,000 tickets/year × 68% AI resolution = 34,000 auto-resolved × $176 = <strong style="color:var(--green)">$5.98M savings</strong>. Equivalent to replacing <strong style="color:var(--blue)">~19 full-time L1 agents</strong> while improving resolution speed 73% and CSAT 23%.</div>
+  </div>
+</div>
+
+<!-- AGENTS -->
+<div id="v-agents" class="view">
+  <div style="margin-bottom:1.25rem"><div style="font-size:1.05rem;font-weight:700;margin-bottom:.2rem">Agent Status Monitor</div><div style="color:var(--t2);font-size:.83rem">Real-time status of all 7 AI agents in the NexaDesk pipeline.</div></div>
+  <div class="g2">
+    <div id="agcards"></div>
+    <div>
+      <div class="sh"><div class="st">🔄 Pipeline Flow</div></div>
+      <div class="card" style="font-size:.82rem;line-height:2.2;font-family:var(--mono);color:var(--t2)">
+        <div style="color:var(--green)">TICKET SUBMITTED</div>
+        <div style="margin-left:.8rem">↓</div>
+        <div style="color:var(--red)">① SecurityAgent <span style="color:var(--t3);font-size:.75rem">— threat detection, PII</span></div>
+        <div style="margin-left:.8rem">↓</div>
+        <div style="color:var(--blue)">② ClassifierAgent <span style="color:var(--t3);font-size:.75rem">— NLP, category, SLA</span></div>
+        <div style="margin-left:.8rem">↓</div>
+        <div style="color:var(--purple)">③ KnowledgeBaseAgent <span style="color:var(--t3);font-size:.75rem">— semantic KB search</span></div>
+        <div style="margin-left:.8rem">↓</div>
+        <div style="color:var(--amber)">④a ResolverAgent <span style="color:var(--t3);font-size:.75rem">— auto-resolve (conf ≥75%)</span></div>
+        <div style="margin-left:1.5rem;color:var(--t3)">OR</div>
+        <div style="color:var(--red)">④b EscalationAgent <span style="color:var(--t3);font-size:.75rem">— route to specialist</span></div>
+        <div style="margin-left:.8rem">↓</div>
+        <div style="color:var(--cyan)">⑤ LearningAgent <span style="color:var(--t3);font-size:.75rem">— record outcome, update KB</span></div>
+        <div style="margin-left:.8rem">↓</div>
+        <div style="color:var(--green)">⑥ AnalyticsAgent <span style="color:var(--t3);font-size:.75rem">— update ROI metrics</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- content -->
+</div><!-- main-wrap -->
+</div><!-- app -->
+
+<!-- MODAL -->
+<div class="mo" id="modal" onclick="if(event.target===this)closeModal()"><div class="mc"><button class="mc-x" onclick="closeModal()">✕</button><div id="mbody"></div></div></div>
+<!-- TOAST -->
+<div class="toast" id="toast"><div id="tic">✅</div><div id="tmsg">Done</div></div>
+
+<script>
+const API='http://localhost:8000';
+let selPri='';
+let ltickets=[];
+
+// ─── INIT ───
+window.onload=()=>{
+  const u=getUser();
+  if(u){showApp(u);}else{document.getElementById('login-scr').style.display='block';}
+};
+
+function getUser(){const u=sessionStorage.getItem('ndu');return u?JSON.parse(u):null;}
+
+function showApp(u){
+  document.getElementById('login-scr').style.display='none';
+  document.getElementById('app-scr').style.display='flex';
+  document.getElementById('uname').textContent=u.full_name||u.email;
+  document.getElementById('urole').textContent=(u.role||'employee').charAt(0).toUpperCase()+(u.role||'employee').slice(1);
+  document.getElementById('uav').textContent=(u.full_name||u.email)[0].toUpperCase();
+  initDash();loadKB();renderAgents();seedLog();loadStoredTickets();renderRecent();
+}
+
+// ─── AUTH ───
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pw=document.getElementById('l-pw').value;
+  const btn=document.getElementById('l-btn');
+  const err=document.getElementById('lerr');
+  err.style.display='none';btn.disabled=true;btn.innerHTML='<span class="sp"></span> Signing in...';
+  try{
+    const res=await apiFetch('/auth/login',{method:'POST',body:JSON.stringify({email,password:pw})});
+    if(res){sessionStorage.setItem('ndt',res.access_token);sessionStorage.setItem('ndu',JSON.stringify(res.user));showApp(res.user);}
+    else{const demo={email,full_name:'Admin User',role:'admin'};sessionStorage.setItem('ndu',JSON.stringify(demo));showApp(demo);showToast('Demo mode — backend offline','info');}
+  }catch(e){err.textContent=e.message||'Invalid credentials';err.style.display='block';}
+  finally{btn.disabled=false;btn.innerHTML='Sign In to NexaDesk';}
+}
+
+function doLogout(){sessionStorage.clear();document.getElementById('app-scr').style.display='none';document.getElementById('login-scr').style.display='block';}
+
+// ─── NAV ───
+const PM={'dashboard':['Dashboard','Real-time AI operations overview'],'submit':['New Ticket','Submit an IT support request'],'tickets':['All Tickets','Browse and manage support tickets'],'kb':['Knowledge Base','AI-curated resolution playbooks'],'analytics':['Analytics & ROI','Performance metrics and cost impact'],'agents':['Agent Status','Monitor the 7-agent AI pipeline']};
+
+function nav(v,el){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  const vEl=document.getElementById('v-'+v);if(vEl)vEl.classList.add('active');
+  if(el)el.classList.add('active');
+  const m=PM[v]||[v,''];
+  document.getElementById('pt').textContent=m[0];document.getElementById('ps').textContent=m[1];
+  if(v==='tickets')loadTickets();
+  if(v==='kb')loadKB();
+  if(v==='dashboard'){loadStoredTickets();renderRecent();}
+}
+
+// ─── DASHBOARD ───
+const WD=[{d:'Mon',r:42,e:8},{d:'Tue',r:65,e:12},{d:'Wed',r:71,e:9},{d:'Thu',r:58,e:15},{d:'Fri',r:89,e:11},{d:'Sat',r:23,e:4},{d:'Sun',r:18,e:3}];
+
+function initDash(){
+  const el=document.getElementById('wchart');
+  if(!el)return;
+  const mx=Math.max(...WD.map(d=>d.r+d.e));
+  el.innerHTML=WD.map(d=>`<div class="bco"><div class="bpair" style="height:${((d.r+d.e)/mx*120)}px"><div class="bseg green" style="height:${(d.r/(d.r+d.e)*100)}%" title="Resolved:${d.r}"></div><div class="bseg red" style="height:${(d.e/(d.r+d.e)*100)}%" title="Escalated:${d.e}"></div></div><div class="bday">${d.d}</div></div>`).join('');
+  const cp=document.getElementById('cat-prog');
+  if(cp)[{n:'Network/VPN',v:28,c:'var(--blue)'},{n:'Email/Outlook',v:22,c:'var(--purple)'},{n:'Access/Perms',v:18,c:'var(--green)'},{n:'Hardware',v:15,c:'var(--amber)'},{n:'Security',v:10,c:'var(--red)'},{n:'Software',v:7,c:'var(--cyan)'}].forEach(x=>{cp.innerHTML+=`<div class="pi"><div class="pi-h"><span>${x.n}</span><span style="font-family:var(--mono);font-size:.7rem;color:var(--t2)">${x.v}%</span></div><div class="pi-trk"><div class="pi-fill" style="width:${x.v}%;background:${x.c}"></div></div></div>`;});
+}
+
+const SL=[
+  {t:'t-system',ic:'🟢',tx:'NexaAgent Orchestrator online. All 7 agents operational.'},
+  {t:'t-resolve',ic:'✅',tx:'Auto-resolved: "VPN drops every 30 minutes" — GlobalProtect credential cache fix.',tk:'#NDK-1001'},
+  {t:'t-classify',ic:'🧠',tx:'Classified: "Outlook not opening after update" → Email/Outlook · Medium · SLA:4h',tk:'#NDK-1002'},
+  {t:'t-escalate',ic:'🚨',tx:'Escalated: "Suspicious login from Dubai IP" → CIRT L3 Security. SOC alerted.',tk:'#NDK-1003'},
+  {t:'t-resolve',ic:'✅',tx:'Auto-resolved: "SharePoint access denied" — Missing group membership identified.',tk:'#NDK-1004'},
+  {t:'t-think',ic:'🧠',tx:'LearningAgent: Analyzed 12 VPN tickets this week. KB confidence scores updated.',tk:'SYSTEM'},
+  {t:'t-resolve',ic:'✅',tx:'Auto-resolved: "Teams mic echo on calls" — Settings → Audio → disable auto-adjust.',tk:'#NDK-1005'},
+];
+
+function seedLog(){SL.forEach((l,i)=>setTimeout(()=>addLog(l),i*500));}
+
+function addLog(l){
+  const c=document.getElementById('dlog');if(!c)return;
+  const em=c.querySelector('.empty-s');if(em)em.remove();
+  const t=new Date().toLocaleTimeString('en-US',{hour12:false});
+  const el=document.createElement('div');el.className=`log-e ${l.t}`;
+  el.innerHTML=`<div class="log-ic">${l.ic}</div><div><div class="log-txt">${l.tx}</div><div class="log-meta">${l.tk||'SYSTEM'} · ${t}</div></div>`;
+  c.insertBefore(el,c.firstChild);
+  while(c.children.length>15)c.removeChild(c.lastChild);
+}
+
+// ─── PRIORITY ───
+function selP(p,btn){
+  selPri=p;
+  document.querySelectorAll('.prop').forEach(b=>b.className='prop');
+  btn.classList.add('p-'+p);
+}
+
+// ─── DEMO AGENT DATA ───
+const DP={
+  'Network / VPN':{steps:[{ic:'🛡️',ag:'SecurityAgent',ms:'Scanning for threats and PII...',re:'✅ Clear — no security incident'},{ic:'🧠',ag:'ClassifierAgent',ms:'NLP analysis: "vpn" "disconnect" "credential" signals...',re:'Category:Network/VPN | Conf:91% | SLA:240min'},{ic:'📚',ag:'KnowledgeBaseAgent',ms:'Semantic KB search: 847 similar tickets found...',re:'Best match: 94.2% confidence — GlobalProtect VPN article'},{ic:'🔧',ag:'ResolverAgent',ms:'Threshold met (91% ≥ 75%). Generating personalized resolution...',re:'Validated against 847 tickets. 91% success rate.'},{ic:'🎓',ag:'LearningAgent',ms:'Recording outcome. Updating KB article metrics...',re:'KB updated ✓'}],resolved:true,getRes:(n)=>`Hello ${n},\n\nNexaDesk AI Agent resolved your VPN issue (validated on 847 similar cases, 91% success rate).\n\nIMMEDIATE STEPS:\n1. Disconnect VPN completely → wait 10s → reconnect\n2. Clear credentials: VPN Settings → Clear Saved Credentials\n3. Sync system clock: Settings → Date/Time → Sync Now\n   (SSL certificate validation breaks on incorrect time)\n4. If on public WiFi, switch to mobile hotspot\n5. Update: Self-Service Portal → GlobalProtect → Install Latest\n\nIf unresolved after 10 minutes, reply to this ticket.\nL2 Network team responds within 30 minutes.`,conf:0.91,assigned:'AI Agent (L1 — NexaAgent)'},
+  'Email / Outlook':{steps:[{ic:'🛡️',ag:'SecurityAgent',ms:'Scanning ticket...',re:'✅ Clear'},{ic:'🧠',ag:'ClassifierAgent',ms:'"email" "sync" "not working" signals detected...',re:'Email/Outlook | Conf:89% | SLA:240min'},{ic:'📚',ag:'KnowledgeBaseAgent',ms:'Checking Exchange health + KB search...',re:'Exchange Online: Healthy. Issue is client-side. 2 articles matched.'},{ic:'🔧',ag:'ResolverAgent',ms:'Client-side OST sync pattern matched. Auto-resolving...',re:'89% success rate on 1,203 similar tickets.'},{ic:'🎓',ag:'LearningAgent',ms:'Recording...',re:'KB updated ✓'}],resolved:true,getRes:(n)=>`Hello ${n},\n\nAI Agent confirmed your Outlook issue is client-side (Exchange is healthy).\n\nRESOLUTION:\n1. File → Account Settings → Select account → Repair → Follow wizard\n2. If still broken: Close Outlook → Win+R → %LocalAppData%\\Microsoft\\Outlook\\ → Delete all .ost files → Reopen Outlook\n   (Rebuilds in 15-30 min for large mailboxes)\n3. Check quota: File → Cleanup Tools → Mailbox Cleanup\n4. Test: https://outlook.office.com — if emails show there, confirmed client-side\n\nNew emails appear within 30 minutes of rebuild.`,conf:0.89,assigned:'AI Agent (L1 — NexaAgent)'},
+  'Security / Phishing':{steps:[{ic:'🚨',ag:'SecurityAgent',ms:'⚠️ SECURITY INCIDENT DETECTED — 6 threat signals found. Activating CIRT protocol...',re:'🔴 CRITICAL: Category override. Bypassing standard pipeline.'},{ic:'📋',ag:'EscalationAgent',ms:'Loading CIRT Incident Response Playbook v3.1. Notifying SOC...',re:'SOC alerted via PagerDuty. On-call analyst ETA: 15 minutes.'},{ic:'🎓',ag:'LearningAgent',ms:'Recording incident. Adding IOCs to SIEM watchlist...',re:'Incident logged ✓'}],resolved:false,getRes:(n)=>`🚨 SECURITY INCIDENT RESPONSE — ${n}\n\nIMMEDIATE ACTIONS — DO THESE NOW:\n1. DO NOT click any links or attachments\n2. Forward email as ATTACHMENT to: security-incidents@company.com\n3. Click Report Phishing in Outlook ribbon\n\nIF YOU ALREADY CLICKED A LINK:\n• DISCONNECT ALL networks immediately (Ethernet, WiFi, Bluetooth)\n• Call Security Hotline: Ext. 1-SEC (1-732) — available 24/7\n• Change ALL passwords from a different device\n• DO NOT restart your computer (preserve forensic evidence)\n\nWHAT WE ARE DOING:\n✓ CIRT analyst assigned and alerted\n✓ Threat indicators being analyzed in SIEM\n✓ Network monitoring enhanced for your device\n✓ Management notified per Security Incident Protocol v3.1\n\nResponse ETA: 15 minutes | Hotline: Ext. 1-SEC`,conf:0.99,assigned:'CIRT — Security Operations Center (L3)'},
+  'Data Loss':{steps:[{ic:'🚨',ag:'SecurityAgent',ms:'DATA LOSS/CRITICAL — Activating emergency recovery protocol...',re:'🔴 CRITICAL: Data loss confirmed. Emergency SLA: 2 hours.'},{ic:'📋',ag:'EscalationAgent',ms:'Loading Data Recovery Playbook. Checking backup snapshots...',re:'Last snapshot: 4 hours ago. Recovery specialist dispatched.'},{ic:'🎓',ag:'LearningAgent',ms:'Recording incident...',re:'Case logged for post-incident review ✓'}],resolved:false,getRes:(n)=>`🚨 DATA RECOVERY EMERGENCY — ${n}\n\n⛔ DO NOT:\n• Restart your computer\n• Save new files to the affected drive\n• Run disk cleanup\n\nIMMEDIATE STEPS:\n1. Right-click parent folder → Properties → Previous Versions → Restore\n2. Check Recycle Bin: Right-click file → Restore\n3. OneDrive: onedrive.com → Recycle Bin (30-day history)\n4. Network drive: Versions saved every 4 hours automatically\n\nIF RANSOMWARE SUSPECTED:\n• Disconnect from ALL networks immediately\n• Call Data Recovery Hotline: Ext. 1-DATA NOW\n• DO NOT pay any ransom demand\n\nData Recovery Specialist will contact you within 20 minutes.\nLast backup confirmed 4 hours ago. Recovery SLA: 2 hours.`,conf:0.99,assigned:'Data Recovery Specialist (L3)'},
+};
+
+function getDemoData(cat,pri){
+  if(DP[cat])return DP[cat];
+  const sla=pri==='critical'?15:pri==='high'?60:240;
+  return{steps:[{ic:'🛡️',ag:'SecurityAgent',ms:'Scanning ticket...',re:'✅ Clear'},{ic:'🧠',ag:'ClassifierAgent',ms:`Classified: ${cat} · ${pri}`,re:`SLA: ${sla}min`},{ic:'📚',ag:'KnowledgeBaseAgent',ms:'Searching KB...',re:'2 articles found. Confidence: 78%'},{ic:'🔧',ag:'ResolverAgent',ms:'Generating resolution...',re:'Solution created'},{ic:'🎓',ag:'LearningAgent',ms:'Recording...',re:'KB updated ✓'}],resolved:pri!=='critical',getRes:(n)=>`Hello ${n},\n\nThe AI Agent analyzed your ticket for "${cat}" and prepared the following steps.\n\n1. Document the exact error message you're seeing\n2. Sign out and back in to the affected application\n3. Clear cache and retry\n4. Check IT Status Page: https://status.company.com\n5. If multiple users affected, report to team lead\n\nIf unresolved after 30 minutes, reply to this ticket.\nL2 analyst assigned within SLA window.`,conf:0.76,assigned:'AI Agent (L1 — NexaAgent)'};
+}
+
+function navToDashboard(){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  const dv=document.getElementById('v-dashboard');if(dv)dv.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(x=>{
+    if(x.getAttribute('onclick')&&x.getAttribute('onclick').includes("'dashboard'"))x.classList.add('active');
+  });
+  document.getElementById('pt').textContent='Dashboard';
+  document.getElementById('ps').textContent='Real-time AI operations overview';
+  loadStoredTickets();
+  renderRecent();
+}
+
+// ─── SUBMIT TICKET ───
+async function submitTicket(){
+  const name=document.getElementById('f-name').value.trim();
+  const eid=document.getElementById('f-eid').value.trim();
+  const dept=document.getElementById('f-dept').value;
+  const email=document.getElementById('f-email').value.trim();
+  const cat=document.getElementById('f-cat').value;
+  const title=document.getElementById('f-title').value.trim();
+  const desc=document.getElementById('f-desc').value.trim();
+  const impact=document.getElementById('f-impact').value;
+  if(!name||!eid||!dept||!email||!cat||!selPri||!title||!desc){showToast('Fill in all required fields ⚠️','error');return;}
+  const btn=document.getElementById('sbtn');
+  btn.disabled=true;btn.innerHTML='<span class="sp"></span> Processing...';
+  const panel=document.getElementById('apanel');
+  panel.classList.add('vis');panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.getElementById('rcard').className='rc';
+  document.getElementById('steps').innerHTML='';
+  const t0=Date.now();
+
+  // ── OPTIMISTIC SAVE ── save to sessionStorage BEFORE API call
+  // This ensures ticket survives even if page reloads mid-flight
+  const tempId='NDK-TEMP-'+Date.now();
+  const optimistic={ticket_number:tempId,title,category:cat,priority:selPri,status:'processing',submitter_name:name,confidence:0};
+  addRow(optimistic);
+
+  try{
+    const payload={submitter_name:name,submitter_email:email,employee_id:eid,department:dept,title,description:desc,category:cat,priority:selPri,business_impact:impact};
+    const tok=sessionStorage.getItem('ndt');
+    const br=tok?await apiFetch('/tickets/',{method:'POST',body:JSON.stringify(payload)}):null;
+    if(br){
+      // Replace optimistic entry with real data
+      addRow({ticket_number:br.ticket_number,title,category:cat,priority:selPri,status:br.status,submitter_name:name,confidence:br.confidence});
+      // Remove temp entry
+      loadStoredTickets();
+      ltickets=ltickets.filter(x=>x.ticket_number!==tempId);
+      saveTickets();
+      await animSteps(br.reasoning_trace||[]);
+      showRes(br,(Date.now()-t0)/1000);
+      addLog({t:br.status==='resolved'?'t-resolve':'t-escalate',ic:br.status==='resolved'?'✅':'🚨',tx:`${br.status==='resolved'?'Auto-resolved':'Escalated'}: "${title}"`,tk:br.ticket_number});
+    }else{
+      // Remove temp, run demo
+      loadStoredTickets();ltickets=ltickets.filter(x=>x.ticket_number!==tempId);saveTickets();
+      await runDemo(name,cat,selPri,title,t0);
+    }
+  }catch(e){
+    loadStoredTickets();ltickets=ltickets.filter(x=>x.ticket_number!==tempId);saveTickets();
+    await runDemo(name,cat,selPri,title,t0);
+  }
+  btn.disabled=false;btn.innerHTML='🤖 Submit Another Ticket';btn.onclick=resetForm;
+  showToast('✅ Ticket saved! Click Dashboard to see it','success');
+}
+
+async function runDemo(name,cat,pri,title,t0){
+  const dd=getDemoData(cat,pri);
+  const stEl=document.getElementById('steps');
+  document.getElementById('astat').textContent='Analyzing ticket...';
+  const els=dd.steps.map(s=>{
+    const el=document.createElement('div');el.className='step';
+    el.innerHTML=`<div class="step-ic">${s.ic}</div><div class="step-bd"><div class="step-ag">${s.ag}</div><div class="step-msg">${s.ms}</div>${s.re?`<div class="step-res">${s.re}</div>`:''}</div><div class="step-chk">✓</div>`;
+    stEl.appendChild(el);return el;
+  });
+  for(let i=0;i<els.length;i++){
+    await dl(300+i*900);els[i].classList.add('sho');document.getElementById('astat').textContent=dd.steps[i].ag+'...';
+    if(i>0)els[i-1].classList.add('done');
+  }
+  await dl(350);if(els.length)els[els.length-1].classList.add('done');
+  const tn='NDK-'+(1000+Math.floor(Math.random()*999));
+  const elapsed=((Date.now()-t0)/1000).toFixed(1);
+  const fr={status:dd.resolved?'resolved':'escalated',resolution_text:dd.getRes(name),assigned_to:dd.assigned,confidence:dd.conf,ticket_number:tn};
+  showRes(fr,parseFloat(elapsed));
+  addRow({ticket_number:tn,title,category:cat,priority:pri,status:fr.status,submitter_name:name,confidence:fr.confidence});
+  addLog({t:fr.status==='resolved'?'t-resolve':'t-escalate',ic:fr.status==='resolved'?'✅':'🚨',tx:`${fr.status==='resolved'?'Auto-resolved':'Escalated'}: "${title}"`,tk:'#'+tn});
+  showToast(fr.status==='resolved'?'✅ AI Agent resolved your ticket!':'🚨 Ticket escalated to specialist!',fr.status==='resolved'?'success':'error');
+}
+
+async function animSteps(trace){
+  const stEl=document.getElementById('steps');
+  const els=(trace||[]).map(s=>{
+    const el=document.createElement('div');el.className='step';
+    el.innerHTML=`<div class="step-ic">${s.icon||'⚡'}</div><div class="step-bd"><div class="step-ag">${s.agent||''}</div><div class="step-msg">${s.message||''}</div>${s.result?`<div class="step-res">${s.result}</div>`:''}</div><div class="step-chk">✓</div>`;
+    stEl.appendChild(el);return el;
+  });
+  for(let i=0;i<els.length;i++){await dl(300+i*700);els[i].classList.add('sho');if(i>0)els[i-1].classList.add('done');}
+  if(els.length)els[els.length-1].classList.add('done');
+}
+
+function showRes(r,ts){
+  const rc=document.getElementById('rcard');const isRes=r.status==='resolved';
+  rc.className=`rc vis ${isRes?'res':'esc'}`;
+  document.getElementById('ric').textContent=isRes?'✅':'🚨';
+  document.getElementById('rti').textContent=isRes?'Issue Auto-Resolved by AI Agent':'Ticket Escalated to Human Specialist';
+  document.getElementById('rbody').textContent=r.resolution_text;
+  document.getElementById('rnum').textContent=r.ticket_number||'—';
+  document.getElementById('rtime').textContent=ts.toFixed(1)+' seconds';
+  document.getElementById('rassigned').textContent=r.assigned_to;
+  document.getElementById('astat').textContent=isRes?'Resolved ✓':'Escalated ⚠️';
+  const ci=document.getElementById('rconf');
+  if(isRes){ci.style.display='';const p=Math.round((r.confidence||.85)*100);document.getElementById('cval').textContent=p+'%';setTimeout(()=>{document.getElementById('cfi').style.width=p+'%';},100);}
+  else ci.style.display='none';
+  rc.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function resetForm(){
+  ['f-name','f-eid','f-email','f-title','f-desc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const dept=document.getElementById('f-dept');if(dept)dept.value='';
+  const cat=document.getElementById('f-cat');if(cat)cat.value='';
+  const imp=document.getElementById('f-impact');if(imp)imp.selectedIndex=0;
+  document.querySelectorAll('.prop').forEach(b=>b.className='prop');
+  selPri='';
+  document.getElementById('apanel').classList.remove('vis');
+  document.getElementById('rcard').className='rc';
+  document.getElementById('sbtn').innerHTML='🤖 Submit — Let AI Agents Resolve';
+  document.getElementById('sbtn').onclick=submitTicket;
+  document.getElementById('steps').innerHTML='';
+}
+
+// ─── TICKETS ───
+function saveTickets(){try{sessionStorage.setItem('nd_tickets',JSON.stringify(ltickets));}catch(e){}}
+function loadStoredTickets(){try{const s=sessionStorage.getItem('nd_tickets');if(s){ltickets=JSON.parse(s);}}catch(e){}}
+
+function addRow(t){
+  loadStoredTickets();
+  ltickets=ltickets.filter(x=>x.ticket_number!==t.ticket_number);
+  ltickets.unshift(t);
+  saveTickets();
+  const nb=document.getElementById('onb');if(nb)nb.textContent=ltickets.length;
+  renderRecent();
+}
+
+function renderRecent(){
+  loadStoredTickets();
+  const tb=document.getElementById('rtb');if(!tb)return;
+  if(!ltickets.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:2rem;font-size:.9rem">Submit a ticket above — it will appear here automatically ✅</td></tr>';return;}
+  const nb=document.getElementById('onb');if(nb)nb.textContent=ltickets.length;
+  tb.innerHTML=ltickets.slice(0,10).map(t=>`<tr style="border-bottom:1px solid var(--b1)"><td class="td-m" style="font-family:var(--mono);font-size:.72rem;color:var(--blue)">#${t.ticket_number}</td><td class="td-t" style="font-weight:600">${t.title}</td><td style="color:var(--t2);font-size:.78rem">${t.submitter_name||'You'}</td><td style="color:var(--t2);font-size:.78rem">${t.category||''}</td><td><span class="badge b-${t.priority}">${t.priority}</span></td><td><span class="badge b-${t.status}">${t.status}</span></td><td class="td-m" style="color:var(--t3);font-size:.72rem">${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</td></tr>`).join('');
+}
+
+function loadTickets(){
+  const tb=document.getElementById('atb');if(!tb)return;
+  const statusFilter=(document.getElementById('fs-status')||{}).value||'';
+  const priFilter=(document.getElementById('fs-pri')||{}).value||'';
+  const allTickets=[
+    {ticket_number:'NDK-1001',title:'VPN drops every 30 minutes',submitter_name:'Raj Kumar',category:'Network / VPN',priority:'medium',status:'resolved',ai_resolution_confidence:.91,created_at:new Date().toISOString()},
+    {ticket_number:'NDK-1002',title:'Outlook not opening after Windows update',submitter_name:'Priya Sharma',category:'Email / Outlook',priority:'high',status:'resolved',ai_resolution_confidence:.89,created_at:new Date().toISOString()},
+    {ticket_number:'NDK-1003',title:'Suspicious login alert from unknown IP',submitter_name:'Arjun Nair',category:'Security / Phishing',priority:'critical',status:'escalated',ai_resolution_confidence:.99,created_at:new Date().toISOString()},
+    {ticket_number:'NDK-1004',title:'Cannot access SharePoint after leave',submitter_name:'Divya Menon',category:'Access / Permissions',priority:'medium',status:'resolved',ai_resolution_confidence:.93,created_at:new Date().toISOString()},
+    {ticket_number:'NDK-1005',title:'Laptop extremely slow after latest update',submitter_name:'Kiran Rao',category:'Laptop / Hardware',priority:'low',status:'resolved',ai_resolution_confidence:.85,created_at:new Date().toISOString()},
+    {ticket_number:'NDK-1006',title:'SAP license error - cannot log in',submitter_name:'Meera Pillai',category:'Software / Application',priority:'high',status:'escalated',ai_resolution_confidence:.72,created_at:new Date().toISOString()},
+    ...ltickets.filter(t=>t.status!=='processing').map(t=>({...t,submitter_name:t.submitter_name||'You',ai_resolution_confidence:t.confidence||.9})),
+  ];
+  const demo=allTickets.filter(t=>{
+    if(statusFilter && t.status!==statusFilter) return false;
+    if(priFilter && t.priority!==priFilter) return false;
+    return true;
+  });
+  if(!demo.length){
+    tb.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:2rem">No tickets match the selected filters</td></tr>`;
+    return;
+  }
+  tb.innerHTML=demo.map(t=>`<tr style="cursor:pointer"><td class="td-m">#${t.ticket_number}</td><td class="td-t">${t.title}</td><td style="color:var(--t2);font-size:.78rem">${t.submitter_name||'—'}</td><td style="color:var(--t2);font-size:.78rem">${t.category}</td><td><span class="badge b-${t.priority}">${t.priority}</span></td><td><span class="badge b-${t.status}">${t.status}</span></td><td style="font-family:var(--mono);font-size:.7rem">${Math.round((t.ai_resolution_confidence||.8)*100)}%</td><td class="td-m">${new Date(t.created_at||Date.now()).toLocaleDateString()}</td></tr>`).join('');
+}
+
+// ─── KB ───
+const KBA=[
+  {ic:'🌐',ti:'VPN Connection Failures',de:'Diagnose and fix VPN connectivity issues including certificate errors and firewall blocks.',tags:['vpn','network','remote','ssl'],res:`STEPS:\n1. Disconnect VPN → wait 10s → reconnect\n2. Clear credentials: VPN Settings → Clear Saved Credentials\n3. Sync system clock: Settings → Date/Time → Sync Now\n4. Switch to mobile hotspot if on public WiFi\n5. Update: Self-Service Portal → GlobalProtect → Latest version`},
+  {ic:'📧',ti:'Outlook Email Not Syncing',de:'Fix Outlook sync issues, missing emails, and OST file corruption.',tags:['email','outlook','sync','ost'],res:`STEPS:\n1. File → Account Settings → Repair account\n2. Delete OST: %LocalAppData%\\Microsoft\\Outlook\\ → Delete .ost → Reopen\n3. Check quota: File → Cleanup Tools\n4. Run ScanPST.exe for PST repair\n5. Test at: https://outlook.office.com`},
+  {ic:'💻',ti:'Laptop Performance Issues',de:'Diagnose slow laptops including memory leaks, startup programs, disk issues.',tags:['laptop','slow','cpu','memory','startup'],res:`STEPS:\n1. Task Manager → CPU/Memory → ID culprit process\n2. msconfig → Startup → Disable non-Microsoft items → Restart\n3. Admin CMD: sfc /scannow\n4. Ensure 15%+ disk space free\n5. Update all drivers via Device Manager`},
+  {ic:'🔐',ti:'Password & Access Management',de:'Self-service password reset, MFA troubleshooting, account unlock procedures.',tags:['password','access','mfa','locked','sso'],res:`STEPS:\n1. Self-service: https://sspr.company.com\n2. Locked account: Wait 15min or manager unlocks via Admin Portal\n3. Lost MFA: Contact IT with Employee ID for re-registration\n4. App access: IT Portal → Access Requests\n5. SharePoint: Contact site owner from 'Access Denied' page`},
+  {ic:'🛡️',ti:'Phishing Email Response',de:'Identify phishing emails, report them safely, and what to do if you clicked.',tags:['phishing','security','suspicious','cirt'],res:`IMMEDIATE:\n1. DO NOT click any links\n2. Forward as ATTACHMENT to: security-incidents@company.com\n3. Click Report Phishing in Outlook\n\nIF CLICKED:\n• Disconnect ALL networks NOW\n• Call Ext. 1-SEC (1-732) — 24/7\n• Change all passwords from another device\n• DO NOT restart computer`},
+  {ic:'📱',ti:'Software Installation & Errors',de:'Request new software, check licenses, and resolve application crashes.',tags:['software','install','license','crash'],res:`STEPS:\n1. Self-service: Software Center → Browse catalog\n2. Crash: Right-click → Run as Administrator\n3. Missing DLL: Installer → Repair mode\n4. License: Email licenses@company.com + Employee ID\n5. Enterprise apps deploy via SCCM in 2 hours`},
+  {ic:'🚨',ti:'Data Loss & Recovery',de:'Emergency procedures for accidental deletion, ransomware, data recovery.',tags:['data','deleted','recover','backup','ransomware'],res:`⛔ DO NOT restart or save to affected drive!\n\nSTEPS:\n1. Right-click folder → Properties → Previous Versions\n2. Check Recycle Bin\n3. OneDrive: Recycle Bin (30-day history)\n4. Network drive: auto-versioned every 4 hours\n\nRANSOMWARE:\n• Disconnect network immediately\n• Call Ext. 1-DATA NOW`},
+  {ic:'🖧',ti:'Server & Infrastructure',de:'Handle server outages, cloud issues, and production incidents with SLA tracking.',tags:['server','cloud','outage','production','azure'],res:`STEPS:\n1. Check: https://status.company.com\n2. O365: https://admin.microsoft.com → Service Health\n3. War Room for P1: Ext. 1-WAR\n\nSeverity SLA:\n• P1 Production down: 15 min response\n• P2 Degraded: 1 hour\n• P3 Non-critical: 4 hours`},
+];
+
+let kbData=[...KBA];
+
+async function loadKB(){
+  try{
+    const r=await apiFetch('/kb/');
+    if(r&&r.articles&&r.articles.length>0){
+      kbData=r.articles.map(a=>({ic:a.icon||'📄',ti:a.title,de:a.description||a.desc,tags:a.tags||[],res:a.resolution||a.resolution_steps||'See full article.'}));
+    }
+  }catch(e){}
+  renderKB(kbData);
+}
+
+function renderKB(arts){
+  const g=document.getElementById('kbgrid');if(!g)return;
+  if(!arts.length){g.innerHTML='<div class="empty-s"><div class="ei">🔍</div><p>No articles found</p></div>';return;}
+  g.innerHTML=arts.map((a,i)=>`<div class="kbc" onclick="showKB(${i})"><div class="kbc-ic">${a.ic}</div><div class="kbc-ti">${a.ti}</div><div class="kbc-de">${a.de}</div><div class="kbtags">${(a.tags||[]).map(t=>`<span class="kbtag">${t}</span>`).join('')}</div></div>`).join('');
+}
+
+function filterKB(){
+  const q=document.getElementById('kbs').value.toLowerCase();
+  renderKB(kbData.filter(a=>a.ti.toLowerCase().includes(q)||a.de.toLowerCase().includes(q)||(a.tags||[]).some(t=>t.includes(q))));
+}
+
+function showKB(i){
+  const a=kbData[i];if(!a)return;
+  showModal(`<div style="font-size:1.75rem;margin-bottom:.75rem">${a.ic}</div><div style="font-size:1.1rem;font-weight:700;margin-bottom:.4rem">${a.ti}</div><div style="color:var(--t2);font-size:.83rem;margin-bottom:1.1rem">${a.de}</div><div style="font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);margin-bottom:.6rem">RESOLUTION STEPS</div><div style="font-size:.8rem;line-height:2;white-space:pre-line;background:rgba(0,0,0,.2);padding:1.1rem;border-radius:9px;font-family:var(--mono);color:var(--text)">${a.res}</div><div style="margin-top:.9rem;display:flex;gap:.35rem;flex-wrap:wrap">${(a.tags||[]).map(t=>`<span class="kbtag">${t}</span>`).join('')}</div>`);
+}
+
+// ─── AGENTS ───
+const AGENTS=[
+  {ic:'🛡️',nm:'SecurityAgent',role:'Threat detection, PII scanning, CIRT routing',calls:1834,acc:'99.1%'},
+  {ic:'🧠',nm:'ClassifierAgent',role:'NLP ticket categorization and priority scoring',calls:1834,acc:'97.3%'},
+  {ic:'📚',nm:'KnowledgeBaseAgent',role:'Semantic search across 8 KB playbooks',calls:1834,acc:'84.1%'},
+  {ic:'🔧',nm:'ResolverAgent',role:'Auto-resolution generation for L1 tickets',calls:1247,acc:'89.4%'},
+  {ic:'📤',nm:'EscalationAgent',role:'Smart routing to L2/L3 specialists',calls:587,acc:'96.8%'},
+  {ic:'🎓',nm:'LearningAgent',role:'Outcome recording and KB improvement',calls:1834,acc:'100%'},
+  {ic:'📊',nm:'AnalyticsAgent',role:'Real-time ROI and performance metrics',calls:1834,acc:'100%'},
+];
+
+function renderAgents(){
+  const el=document.getElementById('agcards');if(!el)return;
+  el.innerHTML='<div style="display:flex;flex-direction:column;gap:.65rem">'+
+  AGENTS.map(a=>`<div class="card" style="display:flex;align-items:center;gap:11px;padding:.9rem 1.1rem"><div style="font-size:1.3rem;flex-shrink:0">${a.ic}</div><div style="flex:1"><div style="font-weight:700;font-size:.86rem;margin-bottom:1px">${a.nm}</div><div style="font-size:.73rem;color:var(--t2)">${a.role}</div></div><div style="text-align:right;flex-shrink:0"><div class="status-pill" style="font-size:.58rem;padding:3px 8px;margin-bottom:3px"><div class="pdot" style="width:5px;height:5px"></div>Online</div><div style="font-family:var(--mono);font-size:.6rem;color:var(--t3)">${a.calls.toLocaleString()} calls · ${a.acc}</div></div></div>`).join('')+
+  '</div>';
+}
+
+// ─── UTILS ───
+async function apiFetch(path,opts={}){
+  const tok=sessionStorage.getItem('ndt');
+  try{
+    const res=await fetch(API+path,{...opts,headers:{'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{}),...(opts.headers||{})}});
+    if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.detail||'Error '+res.status);}
+    return await res.json();
+  }catch(e){
+    if(e.message&&(e.message.includes('Failed to fetch')||e.message.includes('ERR_CONNECTION')||e.message.includes('NetworkError')))return null;
+    throw e;
+  }
+}
+
+function dl(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  const ic={success:'✅',error:'❌',info:'ℹ️'}[type]||'✅';
+  document.getElementById('tic').textContent=ic;document.getElementById('tmsg').textContent=msg;
+  t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),4000);
+}
+
+function showModal(html){document.getElementById('mbody').innerHTML=html;document.getElementById('modal').classList.add('op');}
+function closeModal(){document.getElementById('modal').classList.remove('op');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+</script>
+</body>
+</html>
